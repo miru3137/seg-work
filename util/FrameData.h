@@ -44,5 +44,3 @@ struct FrameData {
     for (unsigned i = 0; i < rgb.total() * 3; i += 3) std::swap(rgb.data[i + 0], rgb.data[i + 2]);
   }
 };
-
-typedef std::shared_ptr<FrameData> FrameDataPointer;

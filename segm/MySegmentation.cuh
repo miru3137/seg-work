@@ -17,10 +17,10 @@
 
 #pragma once
 
-#include "Cuda/containers/device_array.hpp"
-#include "Cuda/types.cuh"
-#include "BoundingBox.h"
-#include "FrameData.h"
+#include "../cuda/containers/device_array.hpp"
+#include "../cuda/types.cuh"
+#include "../util/BoundingBox.h"
+#include "../util/FrameData.h"
 
 #include <list>
 #include <queue>
@@ -58,9 +58,9 @@ public:
   virtual ~MySegmentation();
 
 
-  cv::Mat performSegmentation(FrameDataPointer frame);
+  cv::Mat performSegmentation(FrameData& frame);
 
-  void computeLookups(FrameDataPointer frame);
+  void computeLookups(FrameData& frame);
 
  private:
   // CPU buffers for internal use

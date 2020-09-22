@@ -16,8 +16,8 @@
  */
 
 #include "MySegmentation.cuh"
-#include "Cuda/segmentation.cuh"
-#include "Cuda/cudafuncs.cuh"
+#include "../cuda/segmentation.cuh"
+#include "../cuda/cudafuncs.cuh"
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <memory>
@@ -50,14 +50,14 @@ MySegmentation::MySegmentation(int w, int h, const CameraModel& cameraIntrinsics
 
 MySegmentation::~MySegmentation(){}
 
-cv::Mat MySegmentation::performSegmentation(FrameDataPointer frame)
+cv::Mat MySegmentation::performSegmentation(FrameData& frame)
 {    
     cv::Mat result;
-    const int& width = frame->depth.cols;
-    const int& height = frame->depth.rows;
-    const size_t total = frame->depth.total();
+    const int& width = frame.depth.cols;
+    const int& height = frame.depth.rows;
+    const size_t total = frame.depth.total();
     result = cv::Mat::zeros(height, width, CV_8UC1);
-    const int nMasks = int(frame->classIDs.size());
+    const int nMasks = int(frame.classIDs.size());
     const float maxRelSizeNew = 0.4;
     const float minRelSizeNew = 0.07;
     const size_t minNewMaskPixels = minRelSizeNew * total;
@@ -83,7 +83,7 @@ cv::Mat MySegmentation::performSegmentation(FrameDataPointer frame)
     {
         for(size_t i=0; i<total; i++)
         {
-            if(frame->classIDs[frame->mask.data[i]] == personClassID)
+            if(frame.classIDs[frame.mask.data[i]] == personClassID)
             {
                 semanticIgnoreMap.data[i] = 255;
                 cv8UC1Buffer.data[i] = 0;
@@ -93,7 +93,7 @@ cv::Mat MySegmentation::performSegmentation(FrameDataPointer frame)
                 semanticIgnoreMap.data[i] = 0;
             }
         }
-        //cv::compare(frame->mask, cv::Scalar(...), semanticIgnoreMap, CV_CMP_EQ);
+        //cv::compare(frame.mask, cv::Scalar(...), semanticIgnoreMap, CV_CMP_EQ);
     }
     else
     {
@@ -119,7 +119,7 @@ cv::Mat MySegmentation::performSegmentation(FrameDataPointer frame)
         
         auto checkNeighbor = [&, this](int y, int x, int& n, float d) {
             n = this->cvLabelComps.at<int>(y,x);
-            if (n != 0 && std::fabs(frame->depth.at<float>(y,x)-d) < 0.008 && statsComp.at<int>(n, 4) > small_components_threshold)
+            if (n != 0 && std::fabs(frame.depth.at<float>(y,x)-d) < 0.008 && statsComp.at<int>(n, 4) > small_components_threshold)
             {
                 return true;
             }
@@ -135,7 +135,7 @@ cv::Mat MySegmentation::performSegmentation(FrameDataPointer frame)
                 {
                     int& c = r.at<int>(y,x);
 //                    statsComp.at<int>(c, 4);
-                    float d = frame->depth.at<float>(y,x);
+                    float d = frame.depth.at<float>(y,x);
 
                     if(c==0 || (remove_small_components && statsComp.at<int>(c, 4) < small_components_threshold))
                     {
@@ -172,9 +172,9 @@ cv::Mat MySegmentation::performSegmentation(FrameDataPointer frame)
         // Compute component-mask overlap
         for (size_t i = 0; i < total; ++i)
         {
-            const unsigned char& mask_val = frame->mask.data[i];
+            const unsigned char& mask_val = frame.mask.data[i];
             const int& comp_val = cvLabelComps.at<int>(i);
-            //assert(frame->classIDs.size() > mask_val);
+            //assert(frame.classIDs.size() > mask_val);
             //if(mask_val != 255)
             compMaskOverlap.at<int>(comp_val,mask_val)++;
         }
@@ -282,7 +282,7 @@ cv::Mat MySegmentation::performSegmentation(FrameDataPointer frame)
     return result;
 }
 
-void MySegmentation::computeLookups(FrameDataPointer frame)
+void MySegmentation::computeLookups(FrameData& frame)
 {
     // Copy OpenGL depth texture for CUDA use
     // textureDepthMetric->cudaMap();
@@ -296,8 +296,8 @@ void MySegmentation::computeLookups(FrameDataPointer frame)
     // cudaMemcpy2DFromArray(rgb.ptr(0), rgb.step(), rgbTexturePtr, 0, 0, rgb.colsBytes(), rgb.rows(), cudaMemcpyDeviceToDevice);
     // textureRGB->cudaUnmap();
 
-    cudaMemcpy(rgb.ptr(0), frame->rgb.data, frame->rgb.rows * frame->rgb.cols * 3 * sizeof(unsigned char), cudaMemcpyHostToDevice);
-    cudaMemcpy(depthMapMetric.ptr(0), frame->depth.data, frame->depth.rows * frame->depth.cols * sizeof(float), cudaMemcpyHostToDevice);
+    cudaMemcpy(rgb.ptr(0), frame.rgb.data, frame.rgb.rows * frame.rgb.cols * 3 * sizeof(unsigned char), cudaMemcpyHostToDevice);
+    cudaMemcpy(depthMapMetric.ptr(0), frame.depth.data, frame.depth.rows * frame.depth.cols * sizeof(float), cudaMemcpyHostToDevice);
 
     // Custom filter for depth map
     bilateralFilter(rgb, depthMapMetric, depthMapMetricFiltered, bilatSigmaRadius, 0, bilatSigmaDepth, bilatSigmaColor, bilatSigmaLocation);
@@ -307,4 +307,27 @@ void MySegmentation::computeLookups(FrameDataPointer frame)
     // Generate buffers for vertex and normal maps
     createVMap(cameraIntrinsics, depthMapMetricFiltered, vertexMap, 999.0f);
     createNMap(vertexMap, normalMap);
+
+#if true // FIXME: normal map debugging
+
+    // get normal map result
+    cv::Mat sample(frame.depth.rows, frame.depth.cols, CV_32FC3);
+    cudaMemcpy(sample.data, normalMap.ptr(0), 3 * frame.depth.rows * frame.depth.cols * sizeof(float),
+                cudaMemcpyDeviceToHost);
+
+    // match normal map with OpenCV format
+    cv::Mat relocte(frame.depth.rows, frame.depth.cols, CV_32FC3);
+    int step = frame.depth.rows * frame.depth.cols;
+    for (int i = 0; i < step; i++)
+    {
+        ((float*)relocte.data)[3 * i + 0] = ((float*)sample.data)[i + step * 2];
+        ((float*)relocte.data)[3 * i + 1] = ((float*)sample.data)[i + step * 1];
+        ((float*)relocte.data)[3 * i + 2] = ((float*)sample.data)[i + step * 0];
+    }
+    
+    // display normal map image
+    cv::imshow("Normal Map", relocte * 0.5f + 0.5f);
+
+#endif
+
 }
