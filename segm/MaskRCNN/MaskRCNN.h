@@ -56,6 +56,9 @@ private:
     PyObject *pModule;
     PyObject *pExecute;
 
+    // input image (no alpha channel)
+    cv::Mat input;
+
     // For parallel execution
     std::thread thread;
     std::exception_ptr threadException;
