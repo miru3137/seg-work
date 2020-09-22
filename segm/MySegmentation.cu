@@ -295,9 +295,8 @@ void MySegmentation::computeLookups(FrameData& frame)
     // cudaArray* rgbTexturePtr = textureRGB->getCudaArray();
     // cudaMemcpy2DFromArray(rgb.ptr(0), rgb.step(), rgbTexturePtr, 0, 0, rgb.colsBytes(), rgb.rows(), cudaMemcpyDeviceToDevice);
     // textureRGB->cudaUnmap();
-
-    cudaMemcpy(rgb.ptr(0), frame.rgb.data, frame.rgb.rows * frame.rgb.cols * 3 * sizeof(unsigned char), cudaMemcpyHostToDevice);
-    cudaMemcpy(depthMapMetric.ptr(0), frame.depth.data, frame.depth.rows * frame.depth.cols * sizeof(float), cudaMemcpyHostToDevice);
+    rgb.upload(frame.rgb.data, frame.rgb.cols * sizeof(unsigned char) * 4, frame.rgb.rows, frame.rgb.cols);
+    depthMapMetric.upload(frame.depth.data, frame.depth.cols * sizeof(float), frame.depth.rows, frame.depth.cols);
 
     // Custom filter for depth map
     bilateralFilter(rgb, depthMapMetric, depthMapMetricFiltered, bilatSigmaRadius, 0, bilatSigmaDepth, bilatSigmaColor, bilatSigmaLocation);
@@ -312,8 +311,7 @@ void MySegmentation::computeLookups(FrameData& frame)
 
     // get normal map result
     cv::Mat sample(frame.depth.rows, frame.depth.cols, CV_32FC3);
-    cudaMemcpy(sample.data, normalMap.ptr(0), 3 * frame.depth.rows * frame.depth.cols * sizeof(float),
-                cudaMemcpyDeviceToHost);
+    normalMap.download(sample.data, sample.cols * sizeof(float));
 
     // match normal map with OpenCV format
     cv::Mat relocte(frame.depth.rows, frame.depth.cols, CV_32FC3);
