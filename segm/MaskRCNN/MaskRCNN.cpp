@@ -171,7 +171,9 @@ void MaskRCNN::executeSequential(FrameData& frameData){
 }
 
 PyObject *MaskRCNN::createArguments(cv::Mat rgbImage){
-    assert(rgbImage.channels() == 3);
-    npy_intp dims[3] = { rgbImage.rows, rgbImage.cols, 3 };
-    return PyArray_SimpleNewFromData(3, dims, NPY_UINT8, rgbImage.data); // TODO Release?
+    static cv::Mat input;
+    cv::cvtColor(rgbImage, input, cv::COLOR_BGRA2BGR); 
+    assert(input.channels() == 3);
+    npy_intp dims[3] = { input.rows, input.cols, 3 };
+    return PyArray_SimpleNewFromData(3, dims, NPY_UINT8, input.data); // TODO Release?
 }

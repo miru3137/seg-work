@@ -65,6 +65,17 @@ cv::Mat MySegmentation::performSegmentation(FrameData& frame)
     computeLookups(frame);
     computeGeometricSegmentationMap(vertexMap, normalMap, floatEdgeMap, weightDistance, weightConvexity);
     
+#if true // FIXME: edge map debugging
+
+    // get edge map result
+    cv::Mat sample(frame.depth.rows, frame.depth.cols, CV_32FC1);
+    floatEdgeMap.download(sample.data, sample.cols * sizeof(float));
+    
+    // display edge map image
+    cv::imshow("Edge Map", sample);
+
+#endif
+
     // Perform geometric segmentation
 
     
@@ -307,7 +318,7 @@ void MySegmentation::computeLookups(FrameData& frame)
     //    cudaMemcpy2DToArray(debugMapPtr, 0, 0, depthMapMetricFiltered.ptr(0), depthMapMetricFiltered.step(), depthMapMetricFiltered.colsBytes(), depthMapMetricFiltered.rows(), cudaMemcpyDeviceToDevice);
 
     // Generate buffers for vertex and normal maps
-    createVMap(cameraIntrinsics, depthMapMetricFiltered, vertexMap, 999.0f);
+    createVMap(cameraIntrinsics, depthMapMetricFiltered, vertexMap, 4500.0f);
     createNMap(vertexMap, normalMap);
 
 #if true // FIXME: normal map debugging
