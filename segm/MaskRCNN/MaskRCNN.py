@@ -20,7 +20,7 @@ import os
 
 # Directories
 PYTHON_VE_PATH = ""
-MASK_RCNN_DIR = "/home/ashrat139/Workspace/seg-work/dep/Mask_RCNN"
+MASK_RCNN_DIR = "../dep/Mask_RCNN"
 
 # Optionally, activate virtual environment
 if PYTHON_VE_PATH != "":
@@ -76,7 +76,7 @@ OUTPUT_FRAMES = True
 STORE_CLASS_IDS = True
 START_INDEX = 0
 
-with open("config.toml", 'rb') as toml_file:
+with open("../config.toml", 'rb') as toml_file:
   toml_config = toml.load(toml_file)
   class_names = toml_config["MaskRCNN"]["class_names"]
   model_path = toml_config["MaskRCNN"]["model_path"]
