@@ -20,6 +20,14 @@
 
 // Todo make template
 struct BoundingBox {
+    BoundingBox() :
+        top(std::numeric_limits<int>::max()),
+        right(std::numeric_limits<int>::min()),
+        bottom(std::numeric_limits<int>::min()),
+        left(std::numeric_limits<int>::max()) {}
+    BoundingBox(int top, int right, int bottom, int left) :
+        top(top), right(right), bottom(bottom), left(left) {}
+    
     int top = std::numeric_limits<int>::max(); // order matters
     int right = std::numeric_limits<int>::min();
     int bottom = std::numeric_limits<int>::min();

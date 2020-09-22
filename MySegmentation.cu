@@ -15,7 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-#include "MySegmentation.h"
+#include "MySegmentation.cuh"
 #include "Cuda/segmentation.cuh"
 #include "Cuda/cudafuncs.cuh"
 #include <opencv2/imgproc/imgproc.hpp>
