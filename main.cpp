@@ -9,8 +9,8 @@ int main()
     std::cout << "Hello, world!" << std::endl;
 
     // read images
-    auto rgb = cv::imread("../data/01-rgb.jpg");
-    auto gray = cv::imread("../data/01-depth.png", 0);
+    auto rgb = cv::imread("../data/01-rgb.jpg", cv::IMREAD_ANYCOLOR);
+    auto gray = cv::imread("../data/01-depth.png", cv::IMREAD_ANYDEPTH);
 
     // convert to color & depth map
     cv::Mat color(rgb.rows, rgb.cols, CV_8UC4);
@@ -21,7 +21,7 @@ int main()
     // set frame data
     FrameData frame;
     frame.rgb = color;
-    frame.depth = depth;
+    frame.depth = depth / 1000.f;
 
     // run Mask-RCNN
     MaskRCNN mrcnn;
@@ -36,7 +36,7 @@ int main()
 
     // show images
     cv::imshow("RGB", frame.rgb);
-    cv::imshow("Depth", frame.depth / 450.f);
+    cv::imshow("Depth", frame.depth / 100.f);
 
     // wait until ESC input
     while (cv::waitKey() != 27);
