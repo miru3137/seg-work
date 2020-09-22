@@ -67,7 +67,6 @@ public:
   cv::Mat cv8UC1Buffer;
   cv::Mat cvLabelComps;
   cv::Mat cvLabelEdges;
-  unsigned char maskToID[256];
   cv::Mat semanticIgnoreMap;
 
   // Buffers for internal use

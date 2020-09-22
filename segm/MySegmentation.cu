@@ -43,9 +43,6 @@ MySegmentation::MySegmentation(int w, int h, const CameraModel& cameraIntrinsics
     depthMapMetric.create(h,w);
     depthMapMetricFiltered.create(h,w);
     rgb.create(h,w);
-    
-    maskToID[255] = 255; // Ignored
-    maskToID[0] = 0; // Background
 }
 
 MySegmentation::~MySegmentation(){}
@@ -77,6 +74,12 @@ cv::Mat MySegmentation::performSegmentation(FrameData& frame)
     morphGeometricSegmentationMap(binaryEdgeMap,ucharBuffer, morphEdgeRadius, morphEdgeIterations);
     invertMap(binaryEdgeMap,ucharBuffer);
     ucharBuffer.download(cv8UC1Buffer.data, ucharBuffer.cols());
+
+#if true // FIXME: segmentation debugging
+
+    cv::imshow("Segmentation", cv8UC1Buffer);
+
+#endif
 
     // Build use ignore map
     if(nMasks)
@@ -215,6 +218,9 @@ cv::Mat MySegmentation::performSegmentation(FrameData& frame)
         result.data[i] = mapComponentToMask[cvLabelComps.at<int>(i)];
     
     // FIX HACK
+    for(size_t i=0; i<total; i++)
+        if(semanticIgnoreMap.data[i])
+            result.data[i] = 255;
     
     if(removeEdgeIslands && nMasks)
     {
@@ -275,9 +281,6 @@ cv::Mat MySegmentation::performSegmentation(FrameData& frame)
             }
         }
     }
-
-    for (size_t i = 0; i < total; ++i)
-        result.data[i] = maskToID[result.data[i]];
     
     return result;
 }
